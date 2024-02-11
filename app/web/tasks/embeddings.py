@@ -4,7 +4,7 @@ from app.web.db.models import Pdf
 from app.web.files import download
 from app.chat import create_embeddings_for_pdf
 
-
+# decorator says to run this on the worker instead of directly
 @shared_task()
 def process_document(pdf_id: int):
     pdf = Pdf.find_by(id=pdf_id)
