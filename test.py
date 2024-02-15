@@ -1,26 +1,9 @@
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
-from langchain.callbacks.base import BaseCallbackHandler
 from dotenv import load_dotenv
-import os
-from queue import Queue
-from threading import Thread
 
 load_dotenv()
-
-class StreamingHandler(BaseCallbackHandler):
-    def __init__(self, queue):
-        self.queue = queue
-
-    def on_llm_new_token(self, token, **kwargs):
-        self.queue.put(token)
-
-    def on_llm_end(self, response, **kwargs):
-        self.queue.put(None)
-
-    def on_llm_error(self, error, **kwargs):
-        self.queue.put(None)
 
 # streaming determines how open AI responds to langchain
 chat = ChatOpenAI(streaming=True)
@@ -28,24 +11,6 @@ chat = ChatOpenAI(streaming=True)
 prompt = ChatPromptTemplate.from_messages([
     ("human", "{content}")
 ])
-
-class StreamableChain:
-    def stream(self, input):
-        queue = Queue()
-        handler = StreamingHandler(queue)
-
-        def task():
-            self(input, callbacks=[handler])
-
-        Thread(target=task).start()
-
-        while True:
-            token = queue.get()
-
-            if token is None:
-                break
-
-            yield token
 
 # Using a mixin rather than subclassing LLMChain directly so that we don't have to keep
 # redefining the stream method for anything else we want to add streaming support to
