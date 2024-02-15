@@ -9,23 +9,21 @@ from threading import Thread
 
 load_dotenv()
 
-queue = Queue()
-
 class StreamingHandler(BaseCallbackHandler):
+    def __init__(self, queue):
+        self.queue = queue
+
     def on_llm_new_token(self, token, **kwargs):
-        queue.put(token)
+        self.queue.put(token)
 
     def on_llm_end(self, response, **kwargs):
-        queue.put(None)
+        self.queue.put(None)
 
     def on_llm_error(self, error, **kwargs):
-        queue.put(None)
+        self.queue.put(None)
 
 # streaming determines how open AI responds to langchain
-chat = ChatOpenAI(
-    streaming=True,
-    callbacks=[StreamingHandler()]
-)
+chat = ChatOpenAI(streaming=True)
 
 prompt = ChatPromptTemplate.from_messages([
     ("human", "{content}")
@@ -33,8 +31,11 @@ prompt = ChatPromptTemplate.from_messages([
 
 class StreamingChain(LLMChain):
     def stream(self, input):
+        queue = Queue()
+        handler = StreamingHandler(queue)
+
         def task():
-            self(input)
+            self(input, callbacks=[handler])
 
         Thread(target=task).start()
 
