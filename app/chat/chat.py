@@ -9,6 +9,7 @@ from app.web.api import (
     set_conversation_components,
     get_conversation_components
 )
+from app.chat.score import random_component_by_score
 
 def select_component(
     component_type, component_map, chat_args
@@ -22,7 +23,7 @@ def select_component(
         builder = component_map[previous_component]
         return previous_component, builder(chat_args)
     else:
-        random_name = random.choice(list(component_map.keys()))
+        random_name = random_component_by_score(component_type, component_map)
         builder = component_map[random_name]
         return random_name, builder(chat_args)
     
@@ -49,7 +50,7 @@ def build_chat(chat_args: ChatArgs):
         retriever=retriever_name,
         memory=memory_name
     )
-    
+
     condense_question_llm = ChatOpenAI(streaming=False)
 
     return StreamingConversationalRetrievalChain.from_llm(
